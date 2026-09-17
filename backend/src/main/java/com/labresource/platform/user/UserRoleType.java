@@ -1,0 +1,10 @@
+package com.labresource.platform.user;
+
+public enum UserRoleType {
+    ROLE_RESEARCHER_STUDENT,
+    ROLE_LAB_TECHNICIAN,
+    ROLE_LAB_MANAGER,
+    ROLE_DEPARTMENT_HEAD,
+    ROLE_INSTITUTION_ADMINISTRATOR,
+    ROLE_SYSTEM_ADMINISTRATOR
+}

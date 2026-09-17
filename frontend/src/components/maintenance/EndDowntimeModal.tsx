@@ -1,0 +1,164 @@
+import React, { useState } from 'react';
+import { X, CheckCircle2, Loader2, AlertCircle, Clock } from 'lucide-react';
+import axios from 'axios';
+import type { DowntimeLogResponse, EndDowntimeLogDto } from '../../types/maintenance';
+import { endDowntimeLog } from '../../api/maintenance';
+
+interface EndDowntimeModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSuccess: (updated: DowntimeLogResponse) => void;
+  downtimeLog: DowntimeLogResponse | null;
+}
+
+function getInitialDateTimeLocal(): string {
+  const d = new Date();
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  const hh = String(d.getHours()).padStart(2, '0');
+  const min = String(d.getMinutes()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}T${hh}:${min}`;
+}
+
+export const EndDowntimeModal: React.FC<EndDowntimeModalProps> = ({
+  isOpen,
+  onClose,
+  onSuccess,
+  downtimeLog,
+}) => {
+  const [downtimeEnd, setDowntimeEnd] = useState<string>(getInitialDateTimeLocal);
+  const [durationMinutes, setDurationMinutes] = useState<string>('');
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (isOpen) {
+      setDowntimeEnd(getInitialDateTimeLocal());
+      setDurationMinutes('');
+      setErrorMessage(null);
+    }
+  }, [isOpen]);
+
+  if (!isOpen || !downtimeLog) return null;
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMessage(null);
+    setIsSubmitting(true);
+
+    try {
+      const endIso = downtimeEnd ? new Date(downtimeEnd).toISOString() : undefined;
+      const payload: EndDowntimeLogDto = {
+        downtimeEnd: endIso,
+        durationMinutes: durationMinutes ? Number(durationMinutes) : undefined,
+      };
+
+      const updated = await endDowntimeLog(downtimeLog.id, payload);
+      onSuccess(updated);
+      onClose();
+    } catch (err: unknown) {
+      console.error('Failed to end downtime:', err);
+      if (axios.isAxiosError(err)) {
+        const backendMessage =
+          err.response?.data?.message ||
+          err.response?.data?.error ||
+          (typeof err.response?.data === 'string' ? err.response?.data : null) ||
+          `Failed to end downtime (HTTP ${err.response?.status})`;
+        setErrorMessage(backendMessage);
+      } else if (err instanceof Error) {
+        setErrorMessage(err.message);
+      } else {
+        setErrorMessage('Failed to end downtime.');
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
+      <div className="relative w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-slate-900/90">
+          <div className="flex items-center gap-2 text-emerald-400">
+            <CheckCircle2 className="w-5 h-5" />
+            <h2 className="text-base font-semibold text-white">End Equipment Downtime</h2>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Error Alert */}
+        {errorMessage && (
+          <div className="mx-6 mt-4 p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl flex items-start gap-2 text-xs text-rose-300">
+            <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+            <span>{errorMessage}</span>
+          </div>
+        )}
+
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          <div className="p-3 bg-slate-800/60 rounded-xl border border-slate-700/50 space-y-1 text-xs text-slate-300">
+            <div>Equipment: <strong className="text-white">{downtimeLog.equipmentName}</strong></div>
+            <div>Downtime Started: <span className="text-amber-400 font-mono">{new Date(downtimeLog.downtimeStart).toLocaleString()}</span></div>
+            <div>Reason: <span className="text-slate-200">{downtimeLog.reasonCategory}</span></div>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="block text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+              <Clock className="w-3.5 h-3.5 text-slate-400" />
+              Downtime End Timestamp
+            </label>
+            <input
+              type="datetime-local"
+              value={downtimeEnd}
+              onChange={(e) => setDowntimeEnd(e.target.value)}
+              disabled={isSubmitting}
+              className="w-full px-3 py-2 bg-slate-800/80 border border-slate-700 rounded-xl text-xs text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="block text-xs font-semibold text-slate-300">
+              Duration in Minutes (Optional override)
+            </label>
+            <input
+              type="number"
+              min="0"
+              value={durationMinutes}
+              onChange={(e) => setDurationMinutes(e.target.value)}
+              placeholder="Leave blank to let backend calculate duration"
+              disabled={isSubmitting}
+              className="w-full px-3 py-2 bg-slate-800/80 border border-slate-700 rounded-xl text-xs text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+            />
+          </div>
+
+          <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={isSubmitting}
+              className="px-4 py-2 text-xs font-semibold text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-xl transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="flex items-center gap-2 px-4 py-2 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-500 rounded-xl shadow-lg shadow-emerald-600/20 transition-colors disabled:opacity-50"
+            >
+              {isSubmitting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+              <span>{isSubmitting ? 'Ending...' : 'End Downtime'}</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
