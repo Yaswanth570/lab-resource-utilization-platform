@@ -34,5 +34,5 @@ jwt:
 # Application Configuration
 app:
   cors:
-    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://127.0.0.1:5173}
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://127.0.0.1:5173,https://frontend-beta-flax-4nvh1p8p6p.vercel.app}
   seed-demo-data: ${SEED_DEMO_DATA:false}
