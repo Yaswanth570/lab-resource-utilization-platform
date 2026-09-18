@@ -224,11 +224,17 @@ export const CreateInvoiceModal: React.FC<CreateInvoiceModalProps> = ({
                 disabled={loadingLookups || isSubmitting}
                 className="w-full px-3 py-2 bg-slate-800/80 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:border-indigo-500"
               >
-                {institutions.map((inst) => (
-                  <option key={inst.id} value={inst.id}>
-                    {inst.name}
-                  </option>
-                ))}
+                {loadingLookups ? (
+                  <option value="">Loading institutions...</option>
+                ) : institutions.length === 0 ? (
+                  <option value="">No institutions available</option>
+                ) : (
+                  institutions.map((inst) => (
+                    <option key={inst.id} value={inst.id}>
+                      {inst.name} ({inst.code})
+                    </option>
+                  ))
+                )}
               </select>
             </div>
 

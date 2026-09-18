@@ -862,7 +862,18 @@ public class DemoDataSeeder implements ApplicationRunner {
                                        User canceller, Instant cancelledAt, String cancelReason,
                                        boolean isExternal, SharedEquipmentAllocation sharedAlloc,
                                        BigDecimal hourlyRate, BigDecimal estCost, BigDecimal actualCost) {
-        return bookingRepository.findByBookingReference(ref).orElseGet(() -> {
+        return bookingRepository.findByBookingReference(ref).map(b -> {
+            if (b.getStatus() != status) {
+                b.setStatus(status);
+                b.setApprovedByUser(approver);
+                b.setApprovedAt(approvedAt);
+                b.setCancelledByUser(canceller);
+                b.setCancelledAt(cancelledAt);
+                b.setCancellationReason(cancelReason);
+                return bookingRepository.save(b);
+            }
+            return b;
+        }).orElseGet(() -> {
             Booking b = new Booking();
             b.setBookingReference(ref);
             b.setEquipment(eq);

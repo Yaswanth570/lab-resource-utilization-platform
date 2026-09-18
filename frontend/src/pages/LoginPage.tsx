@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../context/useAuth';
 import { FlaskConical, Eye, EyeOff, Lock, Mail, AlertCircle, Loader2 } from 'lucide-react';
 import axios from 'axios';
@@ -9,7 +9,9 @@ export const LoginPage: React.FC = () => {
   const location = useLocation();
   const { login, isLoading } = useAuth();
 
-  const [email, setEmail] = useState<string>('');
+  const [email, setEmail] = useState<string>(
+    (location.state as { registeredEmail?: string })?.registeredEmail || ''
+  );
   const [password, setPassword] = useState<string>('');
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -185,7 +187,13 @@ export const LoginPage: React.FC = () => {
           </button>
         </form>
 
-        <div className="mt-6 pt-5 border-t border-slate-800 text-center">
+        <div className="mt-6 pt-5 border-t border-slate-800 text-center space-y-2.5">
+          <p className="text-xs text-slate-400">
+            Don&apos;t have an account?{' '}
+            <Link to="/register" className="text-sky-400 hover:text-sky-300 font-semibold transition-colors">
+              Create an account / Register
+            </Link>
+          </p>
           <p className="text-[11px] text-slate-500">
             Access restricted to registered researchers, lab managers, and technicians.
           </p>

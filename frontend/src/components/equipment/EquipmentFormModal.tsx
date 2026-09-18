@@ -70,15 +70,24 @@ export const EquipmentFormModal: React.FC<EquipmentFormModalProps> = ({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [clientErrors, setClientErrors] = useState<Record<string, string>>({});
 
-  // Fetch categories & institutions/departments on mount
+  const [isLoadingDepartments, setIsLoadingDepartments] = useState<boolean>(false);
+
+  // Fetch categories & institutions on mount
   useEffect(() => {
     if (!isOpen) return;
 
     let isMounted = true;
+    setIsLoadingRefData(true);
 
     Promise.all([
-      getCategories().catch(() => []),
-      getInstitutions().catch(() => []),
+      getCategories().catch((err) => {
+        console.error('Failed to load categories:', err);
+        return [];
+      }),
+      getInstitutions().catch((err) => {
+        console.error('Failed to load institutions:', err);
+        return [];
+      }),
     ]).then(([cats, insts]) => {
       if (!isMounted) return;
       setCategories(cats);
@@ -86,35 +95,52 @@ export const EquipmentFormModal: React.FC<EquipmentFormModalProps> = ({
       if (cats.length > 0 && !equipmentToEdit) {
         setCategoryId(cats[0].id);
       }
+      if (insts.length > 0 && !equipmentToEdit) {
+        const userInst = insts.find((i) => i.id === user?.institutionId);
+        setInstitutionId(userInst ? userInst.id : insts[0].id);
+      }
       setIsLoadingRefData(false);
     });
 
     return () => {
       isMounted = false;
     };
-  }, [isOpen, equipmentToEdit]);
+  }, [isOpen, equipmentToEdit, user?.institutionId]);
 
   // Fetch departments when institution changes
   useEffect(() => {
-    if (!isOpen || !institutionId) return;
+    if (!isOpen || !institutionId) {
+      setDepartments([]);
+      return;
+    }
 
     let isMounted = true;
+    setIsLoadingDepartments(true);
     getDepartmentsByInstitution(institutionId)
       .then((depts) => {
         if (!isMounted) return;
         setDepartments(depts);
-        if (depts.length > 0 && !equipmentToEdit) {
-          setDepartmentId(depts[0].id);
+        if (equipmentToEdit && equipmentToEdit.institutionId === institutionId) {
+          setDepartmentId(equipmentToEdit.departmentId);
+        } else if (depts.length > 0) {
+          const userDept = depts.find((d) => d.id === user?.departmentId);
+          setDepartmentId(userDept ? userDept.id : depts[0].id);
+        } else {
+          setDepartmentId(0);
         }
       })
-      .catch(() => {
+      .catch((err) => {
+        console.error('Failed to load departments for institution:', err);
         if (isMounted) setDepartments([]);
+      })
+      .finally(() => {
+        if (isMounted) setIsLoadingDepartments(false);
       });
 
     return () => {
       isMounted = false;
     };
-  }, [isOpen, institutionId, equipmentToEdit]);
+  }, [isOpen, institutionId, equipmentToEdit, user?.departmentId]);
 
   // Populate or reset form fields
   useEffect(() => {
@@ -466,14 +492,14 @@ export const EquipmentFormModal: React.FC<EquipmentFormModalProps> = ({
                 </label>
                 <select
                   value={institutionId}
-                  disabled={isEditing}
+                  disabled={isEditing || isLoadingRefData}
                   onChange={(e) => setInstitutionId(Number(e.target.value))}
                   className="w-full px-3.5 py-2 text-xs text-white bg-slate-950 border border-slate-800 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-sky-500/30 focus:border-sky-500 transition-colors disabled:opacity-60"
                 >
-                  {institutions.length === 0 ? (
-                    <option value={user?.institutionId || 1}>
-                      Institution (ID: {user?.institutionId || 1})
-                    </option>
+                  {isLoadingRefData ? (
+                    <option value="">Loading institutions...</option>
+                  ) : institutions.length === 0 ? (
+                    <option value="">No institutions found</option>
                   ) : (
                     institutions.map((inst) => (
                       <option key={inst.id} value={inst.id}>
@@ -490,13 +516,14 @@ export const EquipmentFormModal: React.FC<EquipmentFormModalProps> = ({
                 </label>
                 <select
                   value={departmentId}
+                  disabled={isLoadingDepartments || departments.length === 0}
                   onChange={(e) => setDepartmentId(Number(e.target.value))}
-                  className="w-full px-3.5 py-2 text-xs text-white bg-slate-950 border border-slate-800 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-sky-500/30 focus:border-sky-500 transition-colors"
+                  className="w-full px-3.5 py-2 text-xs text-white bg-slate-950 border border-slate-800 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-sky-500/30 focus:border-sky-500 transition-colors disabled:opacity-60"
                 >
-                  {departments.length === 0 ? (
-                    <option value={user?.departmentId || 1}>
-                      Current Department (ID: {user?.departmentId || 1})
-                    </option>
+                  {isLoadingDepartments ? (
+                    <option value="">Loading departments...</option>
+                  ) : departments.length === 0 ? (
+                    <option value="">No departments available for this institution</option>
                   ) : (
                     departments.map((d) => (
                       <option key={d.id} value={d.id}>

@@ -13,6 +13,33 @@ export interface LoginRequest {
   password: string;
 }
 
+export interface RegisterRequest {
+  institutionId?: number | null;
+  departmentId?: number | null;
+  email: string;
+  password: string;
+  confirmPassword: string;
+  firstName: string;
+  lastName: string;
+  phone?: string;
+  requestedRole?: string;
+}
+
+export interface RegisterResponse {
+  id: number;
+  institutionId: number;
+  departmentId?: number | null;
+  email: string;
+  firstName: string;
+  lastName: string;
+  phone?: string;
+  status: string;
+  roles: string[];
+  createdAt: string;
+  updatedAt: string;
+  verified: boolean;
+}
+
 export interface LoginResponse {
   accessToken: string;
   tokenType: string;
@@ -44,6 +71,14 @@ export interface UserProfileResponse {
   verified: boolean;
 }
 
+export interface UpdateProfilePayload {
+  firstName: string;
+  lastName: string;
+  phone?: string;
+  institutionId?: number | null;
+  departmentId?: number | null;
+}
+
 export interface AuthContextType {
   user: AuthUser | null;
   token: string | null;
@@ -51,4 +86,5 @@ export interface AuthContextType {
   isLoading: boolean;
   login: (credentials: LoginRequest) => Promise<void>;
   logout: () => void;
+  updateUser?: (updated: Partial<AuthUser>) => void;
 }

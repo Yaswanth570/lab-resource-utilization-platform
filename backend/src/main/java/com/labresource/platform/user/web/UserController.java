@@ -80,6 +80,21 @@ public class UserController {
         return ResponseEntity.ok(UserResponse.fromEntity(user));
     }
 
+    @PutMapping("/users/me")
+    public ResponseEntity<UserResponse> updateCurrentUserProfile(
+            @Valid @RequestBody UpdateUserProfileRequest request) {
+        Long currentUserId = SecurityUtils.getCurrentUserId()
+                .orElseThrow(() -> new InvalidOperationException("No authenticated user in context"));
+        User updated = userService.updateUserProfile(currentUserId, request);
+        return ResponseEntity.ok(UserResponse.fromEntity(updated));
+    }
+
+    @PatchMapping("/users/me")
+    public ResponseEntity<UserResponse> patchCurrentUserProfile(
+            @Valid @RequestBody UpdateUserProfileRequest request) {
+        return updateCurrentUserProfile(request);
+    }
+
     @GetMapping("/institutions/{institutionId}/users")
     @PreAuthorize("hasAnyRole('ROLE_INSTITUTION_ADMINISTRATOR', 'ROLE_SYSTEM_ADMINISTRATOR', 'ROLE_LAB_MANAGER', 'ROLE_DEPARTMENT_HEAD')")
     public ResponseEntity<List<UserResponse>> listUsersByInstitution(@PathVariable Long institutionId) {

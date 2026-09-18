@@ -31,11 +31,17 @@ public class DowntimeLogResponse {
         res.setId(log.getId());
         if (log.getEquipment() != null) {
             res.setEquipmentId(log.getEquipment().getId());
-            res.setEquipmentName(log.getEquipment().getName());
+            try {
+                res.setEquipmentName(log.getEquipment().getName());
+            } catch (Exception ignored) {
+            }
         }
         if (log.getWorkOrder() != null) {
             res.setWorkOrderId(log.getWorkOrder().getId());
-            res.setWorkOrderNumber(log.getWorkOrder().getWorkOrderNumber());
+            try {
+                res.setWorkOrderNumber(log.getWorkOrder().getWorkOrderNumber());
+            } catch (Exception ignored) {
+            }
         }
         res.setReasonCategory(log.getReasonCategory());
         res.setDowntimeStart(log.getDowntimeStart());

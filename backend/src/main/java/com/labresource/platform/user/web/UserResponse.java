@@ -12,7 +12,9 @@ public class UserResponse {
 
     private Long id;
     private Long institutionId;
+    private String institutionName;
     private Long departmentId;
+    private String departmentName;
     private String email;
     private String firstName;
     private String lastName;
@@ -33,8 +35,20 @@ public class UserResponse {
         }
         UserResponse res = new UserResponse();
         res.setId(user.getId());
-        res.setInstitutionId(user.getInstitution() != null ? user.getInstitution().getId() : null);
-        res.setDepartmentId(user.getDepartment() != null ? user.getDepartment().getId() : null);
+        if (user.getInstitution() != null) {
+            res.setInstitutionId(user.getInstitution().getId());
+            try {
+                res.setInstitutionName(user.getInstitution().getName());
+            } catch (Exception ignored) {
+            }
+        }
+        if (user.getDepartment() != null) {
+            res.setDepartmentId(user.getDepartment().getId());
+            try {
+                res.setDepartmentName(user.getDepartment().getName());
+            } catch (Exception ignored) {
+            }
+        }
         res.setEmail(user.getEmail());
         res.setFirstName(user.getFirstName());
         res.setLastName(user.getLastName());
@@ -77,12 +91,28 @@ public class UserResponse {
         this.institutionId = institutionId;
     }
 
+    public String getInstitutionName() {
+        return institutionName;
+    }
+
+    public void setInstitutionName(String institutionName) {
+        this.institutionName = institutionName;
+    }
+
     public Long getDepartmentId() {
         return departmentId;
     }
 
     public void setDepartmentId(Long departmentId) {
         this.departmentId = departmentId;
+    }
+
+    public String getDepartmentName() {
+        return departmentName;
+    }
+
+    public void setDepartmentName(String departmentName) {
+        this.departmentName = departmentName;
     }
 
     public String getEmail() {

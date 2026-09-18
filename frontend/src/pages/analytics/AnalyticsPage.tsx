@@ -27,6 +27,8 @@ import {
   getTrends,
 } from '../../api/analytics';
 import { getDepartmentCostSummary } from '../../api/cost';
+import { useAuth } from '../../context/useAuth';
+import { getDepartmentsByInstitution } from '../../api/equipment';
 import type {
   AnalyticsOverviewResponse,
   UtilizationAnalyticsResponse,
@@ -40,8 +42,12 @@ import type {
 type ActiveTab = 'overview' | 'utilization' | 'bookings' | 'maintenance' | 'cost' | 'performance';
 
 export const AnalyticsPage: React.FC = () => {
-  // Filters State
+  const { user } = useAuth();
+
+  // Tab State
   const [activeTab, setActiveTab] = useState<ActiveTab>('overview');
+
+  // Filters State
   const [startDate, setStartDate] = useState<string>(() => {
     const d = new Date();
     d.setDate(d.getDate() - 30);
@@ -69,6 +75,23 @@ export const AnalyticsPage: React.FC = () => {
   // Load Department Options
   useEffect(() => {
     const loadDepts = async () => {
+      if (user?.institutionId) {
+        try {
+          const depts = await getDepartmentsByInstitution(user.institutionId);
+          if (depts.length > 0) {
+            setDepartments(
+              depts.map((d) => ({
+                id: d.id,
+                name: `${d.name} (${d.code})`,
+              }))
+            );
+            return;
+          }
+        } catch {
+          // Fall back to cost summary if institution lookup fails
+        }
+      }
+
       try {
         const summaries = await getDepartmentCostSummary();
         setDepartments(
@@ -82,7 +105,7 @@ export const AnalyticsPage: React.FC = () => {
       }
     };
     loadDepts();
-  }, []);
+  }, [user?.institutionId]);
 
   // Fetch Analytics Data
   const fetchAnalytics = useCallback(async () => {

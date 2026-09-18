@@ -9,8 +9,6 @@ import type {
   CreateEquipmentSpecificationRequest,
   UpdateEquipmentSpecificationRequest,
   QualificationResponse,
-  InstitutionLookup,
-  DepartmentLookup,
 } from '../types/equipment';
 
 // Equipment Catalog CRUD
@@ -98,16 +96,4 @@ export const getQualifications = async (
 };
 
 // Lookups for Forms
-export const getInstitutions = async (): Promise<InstitutionLookup[]> => {
-  const response = await apiClient.get<InstitutionLookup[]>('/institutions');
-  return response.data;
-};
-
-export const getDepartmentsByInstitution = async (
-  institutionId: number | string
-): Promise<DepartmentLookup[]> => {
-  const response = await apiClient.get<DepartmentLookup[]>(
-    `/institutions/${institutionId}/departments`
-  );
-  return response.data;
-};
+export { getInstitutions, getDepartmentsByInstitution } from './client';

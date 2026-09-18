@@ -14,6 +14,7 @@ import com.labresource.platform.user.UserStatus;
 import com.labresource.platform.user.repository.RoleRepository;
 import com.labresource.platform.user.repository.UserRepository;
 import com.labresource.platform.user.service.UserServiceImpl;
+import com.labresource.platform.user.web.UpdateUserProfileRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -182,5 +183,79 @@ class UserServiceTest {
         assertEquals(UserStatus.DEACTIVATED, user.getStatus());
         assertNotNull(user.getDeletedAt());
         verify(userRepository).save(user);
+    }
+
+    @Test
+    void updateUserProfile_success_withDepartmentAndPhone() {
+        user.setInstitution(institutionA);
+        departmentA.setActive(true);
+        when(userRepository.findById(100L)).thenReturn(Optional.of(user));
+        when(departmentRepository.findById(10L)).thenReturn(Optional.of(departmentA));
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        UpdateUserProfileRequest request = new UpdateUserProfileRequest("Jane", "Doe", "+1 555-0199", 1L, 10L);
+        User result = userService.updateUserProfile(100L, request);
+
+        assertEquals("Jane", result.getFirstName());
+        assertEquals("Doe", result.getLastName());
+        assertEquals("+1 555-0199", result.getPhone());
+        assertEquals(departmentA, result.getDepartment());
+        verify(userRepository).save(user);
+    }
+
+    @Test
+    void updateUserProfile_othersDepartment_setsNullDepartment() {
+        user.setInstitution(institutionA);
+        user.setDepartment(departmentA);
+        when(userRepository.findById(100L)).thenReturn(Optional.of(user));
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        UpdateUserProfileRequest request = new UpdateUserProfileRequest("Jane", "Doe", null, 1L, null);
+        User result = userService.updateUserProfile(100L, request);
+
+        assertEquals("Jane", result.getFirstName());
+        assertNull(result.getDepartment());
+        assertNull(result.getPhone());
+        verify(userRepository).save(user);
+    }
+
+    @Test
+    void updateUserProfile_crossInstitution_throwsInvalidOperationException() {
+        user.setInstitution(institutionA);
+        when(userRepository.findById(100L)).thenReturn(Optional.of(user));
+
+        UpdateUserProfileRequest request = new UpdateUserProfileRequest("Jane", "Doe", null, 2L, null);
+
+        InvalidOperationException ex = assertThrows(InvalidOperationException.class,
+                () -> userService.updateUserProfile(100L, request));
+        assertTrue(ex.getMessage().contains("Cross-institution user transfer is not permitted"));
+        verify(userRepository, never()).save(any(User.class));
+    }
+
+    @Test
+    void updateUserProfile_crossDepartment_throwsInvalidOperationException() {
+        user.setInstitution(institutionA);
+        when(userRepository.findById(100L)).thenReturn(Optional.of(user));
+        when(departmentRepository.findById(20L)).thenReturn(Optional.of(departmentB)); // departmentB belongs to institutionB
+
+        UpdateUserProfileRequest request = new UpdateUserProfileRequest("Jane", "Doe", null, 1L, 20L);
+
+        InvalidOperationException ex = assertThrows(InvalidOperationException.class,
+                () -> userService.updateUserProfile(100L, request));
+        assertTrue(ex.getMessage().contains("does not belong to user's institution"));
+        verify(userRepository, never()).save(any(User.class));
+    }
+
+    @Test
+    void updateUserProfile_blankNames_throwsInvalidOperationException() {
+        user.setInstitution(institutionA);
+        when(userRepository.findById(100L)).thenReturn(Optional.of(user));
+
+        UpdateUserProfileRequest request = new UpdateUserProfileRequest("  ", "Doe", null, 1L, null);
+
+        InvalidOperationException ex = assertThrows(InvalidOperationException.class,
+                () -> userService.updateUserProfile(100L, request));
+        assertTrue(ex.getMessage().contains("First name cannot be empty"));
+        verify(userRepository, never()).save(any(User.class));
     }
 }

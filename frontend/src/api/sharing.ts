@@ -8,7 +8,7 @@ import type {
   SharingAgreementFilterParams,
   SharedAllocationFilterParams,
 } from '../types/sharing';
-import type { EquipmentResponse, InstitutionLookup } from '../types/equipment';
+import type { EquipmentResponse } from '../types/equipment';
 import type { BookingResponse } from '../types/booking';
 
 // ==========================================
@@ -115,7 +115,4 @@ export const getExternalBookings = async (): Promise<BookingResponse[]> => {
   );
 };
 
-export const getInstitutions = async (): Promise<InstitutionLookup[]> => {
-  const response = await apiClient.get<InstitutionLookup[]>('/institutions');
-  return response.data;
-};
+export { getInstitutions } from './client';

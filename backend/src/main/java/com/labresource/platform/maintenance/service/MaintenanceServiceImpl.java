@@ -851,13 +851,17 @@ public class MaintenanceServiceImpl implements MaintenanceService {
         if (id == null) {
             throw new InvalidOperationException("Downtime log ID cannot be null");
         }
-        return downtimeLogRepository.findById(id)
+        EquipmentDowntimeLog log = downtimeLogRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("EquipmentDowntimeLog", "id", id));
+        initializeDowntimeLog(log);
+        return log;
     }
 
     @Override
     public List<EquipmentDowntimeLog> listDowntimeLogs() {
-        return downtimeLogRepository.findAll();
+        List<EquipmentDowntimeLog> list = downtimeLogRepository.findAll();
+        list.forEach(this::initializeDowntimeLog);
+        return list;
     }
 
     @Override
@@ -868,7 +872,9 @@ public class MaintenanceServiceImpl implements MaintenanceService {
         if (!equipmentRepository.existsById(equipmentId)) {
             throw new ResourceNotFoundException("Equipment", "id", equipmentId);
         }
-        return downtimeLogRepository.findByEquipmentId(equipmentId);
+        List<EquipmentDowntimeLog> list = downtimeLogRepository.findByEquipmentId(equipmentId);
+        list.forEach(this::initializeDowntimeLog);
+        return list;
     }
 
     @Override
@@ -879,7 +885,26 @@ public class MaintenanceServiceImpl implements MaintenanceService {
         if (!workOrderRepository.existsById(workOrderId)) {
             throw new ResourceNotFoundException("MaintenanceWorkOrder", "id", workOrderId);
         }
-        return downtimeLogRepository.findByWorkOrderId(workOrderId);
+        List<EquipmentDowntimeLog> list = downtimeLogRepository.findByWorkOrderId(workOrderId);
+        list.forEach(this::initializeDowntimeLog);
+        return list;
+    }
+
+    private void initializeDowntimeLog(EquipmentDowntimeLog log) {
+        if (log != null) {
+            if (log.getEquipment() != null) {
+                try {
+                    log.getEquipment().getName();
+                } catch (Exception ignored) {
+                }
+            }
+            if (log.getWorkOrder() != null) {
+                try {
+                    log.getWorkOrder().getWorkOrderNumber();
+                } catch (Exception ignored) {
+                }
+            }
+        }
     }
 
     @Override

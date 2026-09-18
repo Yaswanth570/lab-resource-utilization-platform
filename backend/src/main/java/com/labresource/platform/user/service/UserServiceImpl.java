@@ -13,6 +13,7 @@ import com.labresource.platform.user.UserRoleType;
 import com.labresource.platform.user.UserStatus;
 import com.labresource.platform.user.repository.RoleRepository;
 import com.labresource.platform.user.repository.UserRepository;
+import com.labresource.platform.user.web.UpdateUserProfileRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -128,8 +129,22 @@ public class UserServiceImpl implements UserService {
     }
 
     private void initializeUser(User user) {
-        if (user != null && user.getRoles() != null) {
-            user.getRoles().size();
+        if (user != null) {
+            if (user.getRoles() != null) {
+                user.getRoles().size();
+            }
+            if (user.getInstitution() != null) {
+                try {
+                    user.getInstitution().getName();
+                } catch (Exception ignored) {
+                }
+            }
+            if (user.getDepartment() != null) {
+                try {
+                    user.getDepartment().getName();
+                } catch (Exception ignored) {
+                }
+            }
         }
     }
 
@@ -175,6 +190,67 @@ public class UserServiceImpl implements UserService {
         }
         if (updatedData.getPhone() != null) {
             existing.setPhone(updatedData.getPhone());
+        }
+
+        User saved = userRepository.save(existing);
+        initializeUser(saved);
+        return saved;
+    }
+
+    @Override
+    @Transactional
+    public User updateUserProfile(Long userId, UpdateUserProfileRequest request) {
+        if (userId == null) {
+            throw new InvalidOperationException("User ID cannot be null");
+        }
+        if (request == null) {
+            throw new InvalidOperationException("Update profile request cannot be null");
+        }
+
+        User existing = getUserById(userId);
+        Long currentInstId = existing.getInstitution() != null ? existing.getInstitution().getId() : null;
+
+        // Institution handling: enforce tenant boundary & business rule
+        if (request.getInstitutionId() != null && request.getInstitutionId() > 0) {
+            if (currentInstId != null && !currentInstId.equals(request.getInstitutionId())) {
+                throw new InvalidOperationException("Cross-institution user transfer is not permitted");
+            }
+        }
+
+        // Department handling: validate within user's institution or "Others" (null)
+        if (request.getDepartmentId() == null || request.getDepartmentId() <= 0) {
+            // User selected "Others" / Unassigned
+            existing.setDepartment(null);
+        } else {
+            Department dept = departmentRepository.findById(request.getDepartmentId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Department", "id", request.getDepartmentId()));
+
+            if (currentInstId != null && !dept.getInstitution().getId().equals(currentInstId)) {
+                throw new InvalidOperationException(String.format(
+                        "Department with id %d does not belong to user's institution (id %d)",
+                        request.getDepartmentId(), currentInstId));
+            }
+            if (!dept.isActive()) {
+                throw new InvalidOperationException("Selected department is inactive");
+            }
+            existing.setDepartment(dept);
+        }
+
+        // Validate names
+        if (request.getFirstName() == null || request.getFirstName().trim().isEmpty()) {
+            throw new InvalidOperationException("First name cannot be empty");
+        }
+        if (request.getLastName() == null || request.getLastName().trim().isEmpty()) {
+            throw new InvalidOperationException("Last name cannot be empty");
+        }
+
+        existing.setFirstName(request.getFirstName().trim());
+        existing.setLastName(request.getLastName().trim());
+
+        if (request.getPhone() != null && !request.getPhone().trim().isEmpty()) {
+            existing.setPhone(request.getPhone().trim());
+        } else {
+            existing.setPhone(null);
         }
 
         User saved = userRepository.save(existing);

@@ -177,6 +177,8 @@ export const CreateAgreementModal: React.FC<CreateAgreementModalProps> = ({
                 >
                   {loadingInstitutions ? (
                     <option value="">Loading institutions...</option>
+                  ) : institutions.length === 0 ? (
+                    <option value="">No institutions available</option>
                   ) : (
                     institutions.map((inst) => (
                       <option key={inst.id} value={inst.id}>
@@ -199,6 +201,8 @@ export const CreateAgreementModal: React.FC<CreateAgreementModalProps> = ({
                 >
                   {loadingInstitutions ? (
                     <option value="">Loading institutions...</option>
+                  ) : institutions.length === 0 ? (
+                    <option value="">No institutions available</option>
                   ) : (
                     institutions.map((inst) => (
                       <option key={inst.id} value={inst.id}>

@@ -10,6 +10,9 @@ import com.labresource.platform.user.Role;
 import com.labresource.platform.user.User;
 import com.labresource.platform.user.UserRoleType;
 import com.labresource.platform.user.UserStatus;
+import com.labresource.platform.department.repository.DepartmentRepository;
+import com.labresource.platform.institution.repository.InstitutionRepository;
+import com.labresource.platform.user.repository.RoleRepository;
 import com.labresource.platform.user.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -40,13 +43,29 @@ class AuthenticationServiceTest {
     @Mock
     private JwtService jwtService;
 
+    @Mock
+    private InstitutionRepository institutionRepository;
+
+    @Mock
+    private DepartmentRepository departmentRepository;
+
+    @Mock
+    private RoleRepository roleRepository;
+
     private PasswordEncoder passwordEncoder;
     private AuthenticationService authenticationService;
 
     @BeforeEach
     void setUp() {
         passwordEncoder = new BCryptPasswordEncoder();
-        authenticationService = new AuthenticationServiceImpl(userRepository, passwordEncoder, jwtService);
+        authenticationService = new AuthenticationServiceImpl(
+                userRepository,
+                passwordEncoder,
+                jwtService,
+                institutionRepository,
+                departmentRepository,
+                roleRepository
+        );
     }
 
     @Test

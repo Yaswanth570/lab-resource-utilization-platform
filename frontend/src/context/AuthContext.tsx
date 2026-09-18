@@ -61,6 +61,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, [logout]);
 
+  const updateUser = useCallback((updated: Partial<AuthUser>) => {
+    setUser((prev) => {
+      if (!prev) return null;
+      const next = { ...prev, ...updated };
+      localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(next));
+      return next;
+    });
+  }, []);
+
   const value: AuthContextType = {
     user,
     token,
@@ -68,6 +77,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     isLoading,
     login,
     logout,
+    updateUser,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

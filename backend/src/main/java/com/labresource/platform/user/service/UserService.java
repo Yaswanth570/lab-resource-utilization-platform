@@ -3,6 +3,8 @@ package com.labresource.platform.user.service;
 import com.labresource.platform.user.User;
 import com.labresource.platform.user.UserRoleType;
 
+import com.labresource.platform.user.web.UpdateUserProfileRequest;
+
 import java.util.List;
 
 public interface UserService {
@@ -18,6 +20,8 @@ public interface UserService {
     List<User> listUsersByDepartment(Long departmentId);
 
     User updateUser(Long id, User updatedData, Long departmentId);
+
+    User updateUserProfile(Long userId, UpdateUserProfileRequest request);
 
     void activateUser(Long id);
 
